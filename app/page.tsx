@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import type { Session } from "@supabase/supabase-js";
-import { authFetch, supabase } from "./auth-client";
+import { authFetch, authReturn, supabase } from "./auth-client";
 import VerificationPanel from "./verification-panel";
 import { EmailSettingsPanel,TrialAdminPanel,TrialRequestPanel } from "./subscriber-panels";
 import {QueuePanel,PortalAccessPanel,BookingRequestsPanel} from "./operations-tools";
@@ -59,6 +59,7 @@ export default function Home(){
  const [dark,setDark]=useState(false),[mobileNav,setMobileNav]=useState(false),[query,setQuery]=useState(''),[toast,setToast]=useState('');
  const [openNavGroups,setOpenNavGroups]=useState<string[]>(['daily_work']);
  const [session,setSession]=useState<Session|null>(null),[authReady,setAuthReady]=useState(false),[recoveryMode,setRecoveryMode]=useState(false);
+ const [authError,setAuthError]=useState(false);
  const [backendReady,setBackendReady]=useState(false),[backendError,setBackendError]=useState(''),[activationRequired,setActivationRequired]=useState(false);
  const [isSuperAdmin,setIsSuperAdmin]=useState(false),[role,setRole]=useState(''),[clinicName,setClinicName]=useState('');
  const [branches,setBranches]=useState<{id:string;name:string}[]>([]),[activeBranch,setActiveBranch]=useState('');
@@ -70,8 +71,8 @@ export default function Home(){
  useEffect(()=>{
   queueMicrotask(()=>{const stored=localStorage.getItem('clinic-preferences-v1');if(stored){try{const p=JSON.parse(stored);if(['ar','he','en'].includes(p.lang))setLang(p.lang);setDark(p.dark===true);}catch{}}
   if(new URLSearchParams(window.location.search).get('verification')==='return')setSection('settings');
-  if(window.location.hash.includes('type=recovery'))setRecoveryMode(true);});
-  void supabase.auth.getSession().then(({data})=>{setSession(data.session);setAuthReady(true);});
+  });
+  void supabase.auth.getSession().then(({data,error})=>{setSession(data.session);setAuthError(Boolean(error)||Boolean(authReturn?.hasError));if(data.session&&authReturn?.recovery)setRecoveryMode(true);if(authReturn?.hasError)window.history.replaceState(null,'',authReturn.cleanPath);}).catch(()=>{setSession(null);setAuthError(true);}).finally(()=>setAuthReady(true));
   const {data:{subscription}}=supabase.auth.onAuthStateChange((event,next)=>{setSession(next);if(event==='PASSWORD_RECOVERY')setRecoveryMode(true);setAuthReady(true);});return()=>subscription.unsubscribe();
  },[]);
  useEffect(()=>{if(authReady)localStorage.setItem('clinic-preferences-v1',JSON.stringify({lang,dark}));},[lang,dark,authReady]);
@@ -81,8 +82,8 @@ export default function Home(){
  const activateClinic=async()=>{try{const r=await authFetch('/api/license/activate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({licenseKey:activationKey,clinicName:activationClinicName})});const d=await r.json() as {error?:string};if(!r.ok)throw new Error(d.error);window.location.reload();}catch(e){notify(e instanceof Error?e.message:tr(lang,'loadError'));}};
  function navigate(id:Section){setSection(id);setMobileNav(false);setQuery('');setSearchResults([]);setCreateSignal(0);const group=navGroups.find(g=>g.items.some(item=>item.id===id));if(group)setOpenNavGroups(current=>current.includes(group.id)?current:[...current,group.id]);window.scrollTo({top:0,behavior:'smooth'});}
  if(!authReady)return <div className="site-loading" aria-label="Loading"/>;
- if(recoveryMode)return <AuthScreen lang={lang} onLanguageChange={setLang} initialMode="update" onPasswordUpdated={()=>{setRecoveryMode(false);void supabase.auth.signOut();}}/>;
- if(!session)return <MarketingSite lang={lang} onLanguageChange={setLang}/>;
+ if(recoveryMode)return <AuthScreen lang={lang} onLanguageChange={setLang} initialMode="update" onPasswordUpdated={async()=>{const {error}=await supabase.auth.signOut({scope:'local'});if(error)throw error;setRecoveryMode(false);}}/>;
+ if(!session)return <MarketingSite authError={authError} lang={lang} onLanguageChange={setLang}/>;
  if(backendReady&&isSuperAdmin&&!backendError)return <><ProgramDashboard lang={lang} setLang={setLang} dark={dark} setDark={setDark} email={session.user.email??''} licenses={<LicenseManager lang={lang} notify={notify}/>}/>{toast&&<div className="toast" role="status"><Check size={17}/>{toast}</div>}</>;
  return <main dir={rtl?'rtl':'ltr'} className={`clinic-shell ${dark?'theme-dark':''}`}>
   <aside className={`sidebar ${mobileNav?'sidebar-open':''}`}>
