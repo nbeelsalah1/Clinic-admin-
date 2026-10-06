@@ -1,0 +1,9 @@
+'use client';
+import {useRef,useState} from 'react';
+import {authFetch} from './auth-client';
+import type {Language} from '../lib/ops-model';
+export default function PortalFeedback({accessId,lang}:{accessId:string;lang:Language}){
+ const [rating,setRating]=useState(5),[comment,setComment]=useState(''),[busy,setBusy]=useState(false),[done,setDone]=useState(false),[error,setError]=useState('');const key=useRef<string|null>(null);const t=(ar:string,he:string,en:string)=>lang==='ar'?ar:lang==='he'?he:en;
+ async function submit(e:React.FormEvent){e.preventDefault();setBusy(true);setError('');try{key.current??=crypto.randomUUID();const r=await authFetch('/api/portal',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({accessId,rating,comment,requestKey:key.current})});const d=await r.json() as {error?:string};if(!r.ok)throw new Error(d.error);setDone(true);}catch(e){setError(e instanceof Error?e.message:String(e));}finally{setBusy(false);}}
+ return <section className="panel"><h3>{t('قيّم تجربتك مع العيادة','דירוג החוויה במרפאה','Rate your clinic experience')}</h3>{done?<p className="subscriber-notice" role="status">{t('شكرًا، وصل تقييمك لإدارة العيادة.','תודה, המשוב נשלח למרפאה.','Thank you. Your feedback was sent to clinic management.')}</p>:<form onSubmit={submit}><div className="ops-fields"><label className="form-label">{t('التقييم','דירוג','Rating')}<select value={rating} onChange={e=>setRating(Number(e.target.value))}>{[5,4,3,2,1].map(v=><option key={v} value={v}>{v} / 5</option>)}</select></label><label className="form-label">{t('تعليقك','תגובה','Comment')}<textarea maxLength={2000} value={comment} onChange={e=>setComment(e.target.value)}/></label></div><button className="button button-primary" disabled={busy}>{t('إرسال التقييم','שליחת משוב','Send feedback')}</button></form>}{error&&<p className="error-banner" role="alert">{error}</p>}</section>;
+}

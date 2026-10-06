@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX `qredit_active_invoice_uq` ON `qredit_payments` (`clinic_id`,`branch_id`,`invoice_id`) WHERE status IN ('creating','pending');

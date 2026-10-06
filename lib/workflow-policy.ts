@@ -1,0 +1,5 @@
+export function clinicReceptionIntent(text:string):'booking'|'prices'|'location'|'hours'|'help'{
+ const s=text.toLowerCase();if(/حجز|موعد|الغاء|إلغاء|تعديل|book|appointment|cancel|תור|ביטול/.test(s))return 'booking';if(/سعر|اسعار|أسعار|تكلف|price|cost|מחיר/.test(s))return 'prices';if(/موقع|عنوان|وين|location|address|כתובת/.test(s))return 'location';if(/دوام|ساع|متى|hour|open|שעות/.test(s))return 'hours';return 'help';
+}
+export async function validWebhookSignature(body:string,header:string|null,secret:string){if(!header||!/^sha256=[a-f0-9]{64}$/.test(header)||!secret)return false;const key=await crypto.subtle.importKey('raw',new TextEncoder().encode(secret),{name:'HMAC',hash:'SHA-256'},false,['verify']);const bytes=Uint8Array.from(header.slice(7).match(/../g)!,h=>parseInt(h,16));return crypto.subtle.verify('HMAC',key,bytes,new TextEncoder().encode(body));}
+export async function workflowQuota(db:D1Database,bucket:string,limit:number){const result=await db.prepare('INSERT INTO workflow_limits (bucket,count) VALUES (?,1) ON CONFLICT(bucket) DO UPDATE SET count=count+1 WHERE count<?').bind(bucket,limit).run();return Boolean(result.meta.changes);}

@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX `clinics_public_slug_uq` ON `clinics` (`public_slug`) WHERE "clinics"."public_slug" IS NOT NULL;

@@ -1,0 +1,1 @@
+ALTER TABLE `stock_items` ADD `category` text DEFAULT 'supply' NOT NULL;

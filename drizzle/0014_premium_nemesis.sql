@@ -1,0 +1,2 @@
+ALTER TABLE `clinics` ADD `primary_specialty` text DEFAULT 'general' NOT NULL;--> statement-breakpoint
+ALTER TABLE `clinics` ADD `enabled_specialties` text DEFAULT '["general","dental","obstetrics","pediatrics","dermatology","physiotherapy","ophthalmology"]' NOT NULL;
