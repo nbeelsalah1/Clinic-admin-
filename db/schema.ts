@@ -37,6 +37,11 @@ export const emailSettings = sqliteTable("email_settings", {
   enabled: integer("enabled", { mode: "boolean" }).notNull().default(false),
   updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 });
+export const aiProviderSettings = sqliteTable("ai_provider_settings", {
+  provider: text("provider").primaryKey(),
+  apiKeyEnc: text("api_key_enc").notNull(),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+});
 export const emailOutbox = sqliteTable("email_outbox", {
   id: text("id").primaryKey(), eventKey: text("event_key").notNull(), kind: text("kind").notNull(),
   recipientEnc: text("recipient_enc").notNull(), payloadEnc: text("payload_enc"), requestEnc: text("request_enc"),
